@@ -1,0 +1,106 @@
+---
+
+- hosts: all
+  tasks:
+
+    - name: Install Python
+      package: name=python-dev state=latest
+      become: true
+
+    - name: Install Ansible
+      package: name=ansible state=latest
+      become: true
+
+    - name: Install Pip
+      package: name=python-pip state=latest
+      become: true
+
+    - name: Install PostgreSQL
+      package: name=postgresql state=latest
+      become: true
+
+    - name: Start PostgreSQL
+      service: name=postgresql state=started enabled=yes
+      become: true
+
+    - name: Install prerequisites for python packages
+      package: name={{ item }} state=latest
+      with_items:
+        - python-dev
+        - python-lxml
+        - python-yaml
+        - python-paramiko
+        - libpq-dev
+        - libssl-dev
+        - libffi-dev
+        - libxml2-dev
+        - libxslt-dev
+        - lib32z1-dev
+        - libgmp-dev
+      become: true
+
+    # - name: Install Paramiko
+    #   pip: name=paramiko
+    #   become: true
+
+    - name: Install Jinja2
+      pip: name=jinja2
+      become: true
+
+    - name: Install Psycopg
+      pip: name=psycopg2
+      become: true
+
+    - name: Install Django
+      pip: name=django
+      become: true
+
+    - name: Install Django REST Framework
+      pip: name=djangorestframework
+      become: true
+
+    - name: Install NGINX
+      package: name=nginx state=latest
+      become: true
+
+    - name: Delete default NGINX server
+      file: path=/etc/nginx/sites-enabled/default state=absent
+      notify: Reload NGINX
+      become: true
+
+    - name: Create wombll file for NGINX
+      copy: src=wombll.nginx dest=/etc/nginx/sites-enabled/wombll.nginx
+      notify: Reload NGINX
+      become: true
+
+    - name: Install Gunicorn
+      pip: name=gunicorn
+      become: true
+
+    - name: Create Wombll Gunicorn Startup
+      copy: src=wombll.conf dest=/etc/init/wombll.conf
+      become: true
+
+    - name: Ensure Wombll Gunicorn Started
+      service: name=wombll state=started
+      become: yes
+
+    - name: Install Juniper PyEZ
+      pip: name=junos-eznc
+      become: true
+
+    - name: Create PostgreSQL User (wombll)
+      postgresql_user: name=wombll password=wombll
+      become: yes
+      become_user: postgres
+
+    - name: Create PostgreSQL Database (wombll)
+      postgresql_db: name=wombll owner=wombll encoding=UTF-8
+      become: yes
+      become_user: postgres
+
+  handlers:
+
+    - name: Reload NGINX
+      service: name=nginx state=restarted
+      become: yes
